@@ -1,21 +1,34 @@
-use std::io::{Read, Write};
+use std::io::{Write, Read};
 use std::net::TcpStream;
-use std::sync::{Arc, Mutex};
-use shared::messages::{RegisterTeam, RegisterTeamResult, SubscribePlayer};
-use serde_json;
 
-pub fn connect_to_server(address: &str) -> TcpStream {
-    TcpStream::connect(address).expect("Could not connect to server")
+
+pub fn send_message(stream: &mut TcpStream, message: &str) {
+    let size = (message.len() as u32).to_le_bytes();
+    if stream.write_all(&size).is_err() {
+        eprintln!("❌ Erreur lors de l'envoi de la taille du message !");
+        return;
+    }
+    if stream.write_all(message.as_bytes()).is_err() {
+        eprintln!("❌ Erreur lors de l'envoi du message !");
+    }
 }
 
-pub fn send_message<T: serde::Serialize>(stream: &mut TcpStream, message: &T) {
-    let serialized = serde_json::to_string(message).unwrap();
-    stream.write_all(serialized.as_bytes()).unwrap();
-    stream.flush().unwrap();
-}
 
-pub fn read_message(stream: &mut TcpStream) -> String {
-    let mut buffer = [0; 512];
-    let size = stream.read(&mut buffer).unwrap();
-    String::from_utf8_lossy(&buffer[..size]).to_string()
+pub fn receive_message(stream: &mut TcpStream) -> Option<String> {
+    let mut size_buffer = [0; 4];
+    if stream.read_exact(&mut size_buffer).is_err() {
+        eprintln!("❌ Erreur lors de la lecture de la taille du message !");
+        return None;
+    }
+    let size = u32::from_le_bytes(size_buffer) as usize;
+    if size > 1_048_576 {
+        eprintln!("⚠️ Message reçu trop grand : {} octets !", size);
+        return None;
+    }
+    let mut buffer = vec![0; size];
+    if stream.read_exact(&mut buffer).is_err() {
+        eprintln!("❌ Erreur lors de la lecture du message !");
+        return None;
+    }
+    String::from_utf8(buffer).ok()
 }

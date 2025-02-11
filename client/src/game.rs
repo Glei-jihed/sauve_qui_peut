@@ -1,47 +1,120 @@
+use std::io::{Read, Write};
 use std::net::TcpStream;
-use shared::messages::{RegisterTeam, RegisterTeamResult, SubscribePlayer};
 use serde_json;
 
 pub struct GameClient {
     pub stream: TcpStream,
+    
     pub registration_token: Option<String>,
 }
 
 impl GameClient {
     pub fn new(server_address: &str) -> Self {
-        let stream = TcpStream::connect(server_address).expect("Could not connect to server");
-        GameClient { stream, registration_token: None }
+        match TcpStream::connect(server_address) {
+            Ok(stream) => {
+                println!("✅ Connecté au serveur sur {}", server_address);
+                GameClient { 
+                    stream, 
+                    registration_token: None 
+                }
+            }
+            Err(e) => {
+                eprintln!("❌ Erreur de connexion au serveur : {}", e);
+                std::process::exit(1);
+            }
+        }
     }
+
 
     pub fn register_team(&mut self, team_name: &str) {
-        let register_team = RegisterTeam { name: team_name.to_string() };
-        let message = serde_json::to_string(&register_team).unwrap();
-        self.stream.write_all(message.as_bytes()).unwrap();
+        let message = serde_json::json!({
+            "RegisterTeam": {
+                "name": team_name
+            }
+        }).to_string();
 
-        let mut buffer = [0; 512];
-        let size = self.stream.read(&mut buffer).unwrap();
-        let response: String = String::from_utf8_lossy(&buffer[..size]).to_string();
+        let message_size = (message.len() as u32).to_le_bytes();
+        println!("📤 Envoi de la taille : {} octets", message.len());
 
-        if let Ok(result) = serde_json::from_str::<RegisterTeamResult>(&response) {
-            println!("Team registered: {:?}", result);
-            self.registration_token = Some(result.registration_token);
+        if self.stream.write_all(&message_size).is_err() {
+            eprintln!("❌ Erreur d'envoi de la taille !");
+            return;
+        }
+
+        if self.stream.write_all(message.as_bytes()).is_err() {
+            eprintln!("❌ Erreur d'envoi du message !");
+            return;
+        }
+
+        let mut size_buffer = [0; 4];
+        if self.stream.read_exact(&mut size_buffer).is_err() {
+            eprintln!("❌ Erreur de lecture de la taille de la réponse !");
+            return;
+        }
+
+        let response_size = u32::from_le_bytes(size_buffer);
+        let mut buffer = vec![0; response_size as usize];
+
+        match self.stream.read_exact(&mut buffer) {
+            Ok(_) => {
+                let response = String::from_utf8_lossy(&buffer).to_string();
+                println!("📩 Réponse du serveur : {:?}", response);
+
+            
+            }
+            Err(e) => {
+                eprintln!("❌ Erreur de lecture du message : {}", e);
+            }
         }
     }
 
+    
     pub fn subscribe_player(&mut self, player_name: &str) {
         if let Some(token) = &self.registration_token {
-            let subscribe_player = SubscribePlayer {
-                name: player_name.to_string(),
-                registration_token: token.clone(),
-            };
-            let message = serde_json::to_string(&subscribe_player).unwrap();
-            self.stream.write_all(message.as_bytes()).unwrap();
+            let message = serde_json::json!({
+                "SubscribePlayer": {
+                    "name": player_name,
+                    "registration_token": token
+                }
+            }).to_string();
 
-            let mut buffer = [0; 512];
-            let size = self.stream.read(&mut buffer).unwrap();
-            let response: String = String::from_utf8_lossy(&buffer[..size]).to_string();
+            let message_size = (message.len() as u32).to_le_bytes();
+            println!("📤 Envoi de la taille : {} octets", message.len());
 
-            println!("Player subscribed: {:?}", response);
+            if self.stream.write_all(&message_size).is_err() {
+                eprintln!("❌ Erreur d'envoi de la taille !");
+                return;
+            }
+
+            if self.stream.write_all(message.as_bytes()).is_err() {
+                eprintln!("❌ Erreur d'envoi du message !");
+                return;
+            }
+
+            let mut size_buffer = [0; 4];
+            if self.stream.read_exact(&mut size_buffer).is_err() {
+                eprintln!("❌ Erreur de lecture de la taille de la réponse !");
+                return;
+            }
+
+            let response_size = u32::from_le_bytes(size_buffer);
+            let mut buffer = vec![0; response_size as usize];
+
+            match self.stream.read_exact(&mut buffer) {
+                Ok(_) => {
+                    let response = String::from_utf8_lossy(&buffer).to_string();
+                    println!("📩 Réponse du serveur : {:?}", response);
+                }
+                Err(e) => {
+                    eprintln!("❌ Erreur de lecture du message : {}", e);
+                }
+            }
+        } else {
+            eprintln!("❌ Erreur : Aucun token d'inscription disponible !");
         }
+    }
+
+    pub fn process_radar_view(&self, radar: &str) {
+        println!("Radar view encoded: {}", radar);
     }
 }
