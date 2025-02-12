@@ -22,7 +22,7 @@ fn main() {
             client.register_team(&team_name);
             for member in team_members {
                 println!("[Network] Inscription du joueur : {}", member);
-                // client.subscribe_player(&member); // À implémenter ultérieurement.
+                client.subscribe_player(&member);
             }
         }
         loop {

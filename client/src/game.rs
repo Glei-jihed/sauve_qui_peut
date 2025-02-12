@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use serde_json;
-use shared::messages::{RegisterTeamResultWrapper, RegisterTeamResult};
+use shared::messages::{RegisterTeamResultWrapper, RegisterTeamResult, SubscribePlayer, SubscribePlayerResult};
 
 pub struct GameClient {
     pub stream: TcpStream,
@@ -78,7 +78,40 @@ impl GameClient {
         }
     }
 
-    pub fn subscribe_player(&mut self, _player_name: &str) {
-        // TODO
+    pub fn subscribe_player(&mut self, player_name: &str) {
+        if let Some(token) = &self.registration_token {
+            let message = serde_json::json!({
+                "SubscribePlayer": {
+                    "name": player_name,
+                    "registration_token": token
+                }
+            }).to_string();
+            let message_size = (message.len() as u32).to_le_bytes();
+            println!("📤 Envoi de la taille pour SubscribePlayer: {} octets", message.len());
+            if self.stream.write_all(&message_size).is_err() {
+                eprintln!("❌ Erreur d'envoi de la taille pour SubscribePlayer!");
+                return;
+            }
+            if self.stream.write_all(message.as_bytes()).is_err() {
+                eprintln!("❌ Erreur d'envoi du message SubscribePlayer!");
+                return;
+            }
+            let mut size_buffer = [0; 4];
+            if self.stream.read_exact(&mut size_buffer).is_err() {
+                eprintln!("❌ Erreur de lecture de la taille de la réponse SubscribePlayer!");
+                return;
+            }
+            let response_size = u32::from_le_bytes(size_buffer);
+            let mut buffer = vec![0; response_size as usize];
+            if self.stream.read_exact(&mut buffer).is_err() {
+                eprintln!("❌ Erreur de lecture du message SubscribePlayer!");
+                return;
+            }
+            let response = String::from_utf8_lossy(&buffer).to_string();
+            println!("📩 Réponse du serveur (SubscribePlayer): {:?}", response);
+            // Vous pouvez ajouter ici la désérialisation et le traitement de la réponse SubscribePlayerResult.
+        } else {
+            eprintln!("❌ Aucun token disponible pour subscribe_player!");
+        }
     }
 }

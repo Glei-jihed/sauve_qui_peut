@@ -32,3 +32,11 @@ Prochaine étape :
 
 Next steps:
 - Intégrer la logique de jeu (déplacements, radar view, challenges) et la communication réseau complète pour l'inscription et la gestion du jeu.
+
+# feat(player-registration): Implémentation de subscribe_player et intégration dans le thread réseau
+
+- Ajout de la méthode subscribe_player dans GameClient (game.rs) pour envoyer une requête SubscribePlayer au serveur en utilisant le token d'inscription.
+- Mise à jour du thread réseau dans main.rs afin d'appeler subscribe_player pour chaque membre de l'équipe après l'enregistrement.
+- Les réponses du serveur pour SubscribePlayer sont désormais affichées dans la console.
+  
+Prochaine étape : traiter et afficher la réponse SubscribePlayer dans l'interface, et passer à l'intégration de la vue de jeu (RadarView, etc.).
