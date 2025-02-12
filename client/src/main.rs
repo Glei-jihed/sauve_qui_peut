@@ -1,11 +1,15 @@
-mod game;
-mod network;
+mod team_gui;
 
-use crate::game::GameClient;
+use eframe::run_native;
+use team_gui::TeamRegistrationApp;
 
 fn main() {
-    let server_address = "127.0.0.1:8778";
-    let mut client = GameClient::new(server_address);
-
-    client.register_team("team_test");
+    let native_options = eframe::NativeOptions::default();
+    let _ = run_native(
+        "Sauve Qui Peut - Création d'équipe", // Titre de la fenêtre
+        native_options,
+        Box::new(|_cc| -> Box<dyn eframe::App> {
+            Box::new(TeamRegistrationApp::default())
+        })
+    );
 }

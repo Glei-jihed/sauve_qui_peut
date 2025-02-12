@@ -1,7 +1,7 @@
 use std::io::{Write, Read};
 use std::net::TcpStream;
 
-
+/// Envoie un message sur le stream en préfixant par sa taille encodée en little-endian.
 pub fn send_message(stream: &mut TcpStream, message: &str) {
     let size = (message.len() as u32).to_le_bytes();
     if stream.write_all(&size).is_err() {
@@ -13,7 +13,8 @@ pub fn send_message(stream: &mut TcpStream, message: &str) {
     }
 }
 
-
+/// Lit un message depuis le stream en lisant d'abord 4 octets pour obtenir la taille (little-endian),
+/// puis en lisant le nombre d’octets indiqué.
 pub fn receive_message(stream: &mut TcpStream) -> Option<String> {
     let mut size_buffer = [0; 4];
     if stream.read_exact(&mut size_buffer).is_err() {
