@@ -6,13 +6,20 @@ pub struct RegisterTeam {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum RegisterTeamResult {
-    Ok { expected_players: u8, registration_token: String },
-    Err(String),
+pub struct RegisterTeamResultOk {
+    pub expected_players: u8,
+    pub registration_token: String,
 }
 
-// On renomme le champ en snake_case et on le renomme pour la compatibilité JSON si nécessaire.
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum RegisterTeamResult {
+    OkVariant { #[serde(rename = "Ok")] ok: RegisterTeamResultOk },
+    ErrVariant { #[serde(rename = "Err")] err: String },
+}
+
+// Ce wrapper permet de désérialiser une réponse de la forme
+// {"RegisterTeamResult": { "Ok": { "expected_players": 3, "registration_token": "SECRET" } }}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RegisterTeamResultWrapper {
     #[serde(rename = "RegisterTeamResult")]

@@ -3,10 +3,9 @@ use std::net::{TcpListener, TcpStream};
 use std::thread;
 use log::{info, warn};
 use serde_json;
-use shared::messages::RegisterTeam;
+use shared::messages::{RegisterTeamResultWrapper};
 
 fn handle_client(mut stream: TcpStream) {
-    
     let mut size_buffer = [0u8; 4];
     if let Err(e) = stream.read_exact(&mut size_buffer) {
         warn!("Erreur lors de la lecture de la taille du message: {}", e);
@@ -25,16 +24,11 @@ fn handle_client(mut stream: TcpStream) {
     let msg_str = String::from_utf8_lossy(&buffer);
     info!("Message reçu: {}", msg_str);
 
-    
-    if let Ok(parsed) = serde_json::from_str::<RegisterTeam>(&msg_str) {
-        info!("RegisterTeam reçu: {:?}", parsed);
-        
+    if let Ok(_wrapper) = serde_json::from_str::<RegisterTeamResultWrapper>(&msg_str) {
+        info!("RegisterTeam reçu.");
         let response = serde_json::json!({
             "RegisterTeamResult": {
-                "Ok": {
-                    "expected_players": 3,
-                    "registration_token": "SECRET_TOKEN"
-                }
+                "Err": "AlreadyRegistered"
             }
         }).to_string();
         let response_bytes = response.as_bytes();
@@ -48,7 +42,6 @@ fn handle_client(mut stream: TcpStream) {
             return;
         }
     } else {
-        // Si la désérialisation échoue, on envoie une erreur générique.
         let response = serde_json::json!({
             "ActionError": "Unknown message"
         }).to_string();
