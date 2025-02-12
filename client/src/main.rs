@@ -1,12 +1,13 @@
 mod team_gui;
 mod game;
-mod network; // (déjà présent pour la logique réseau si besoin)
+mod network;
 
+use eframe::run_native;
+use team_gui::{TeamRegistrationAppWithChannel, TeamRegistrationApp};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
-use eframe::run_native;
-use team_gui::TeamRegistrationAppWithChannel;
+use crate::game::GameClient;
 
 fn main() {
     // Création d'un canal pour transmettre les infos de création d'équipe (nom et membres)
@@ -14,30 +15,24 @@ fn main() {
 
     // Lancement du thread réseau qui attend les infos de création d'équipe
     let network_handle = thread::spawn(move || {
-        // Attente de réception des infos de l'interface GUI
         if let Ok((team_name, team_members)) = rx.recv() {
             println!("[Network] Infos reçues : {} {:?}", team_name, team_members);
-            // Connexion au serveur
             let server_address = "127.0.0.1:8778";
-            let mut client = game::GameClient::new(server_address);
-            // Envoi de la demande d'enregistrement d'équipe
+            let mut client = GameClient::new(server_address);
             client.register_team(&team_name);
-            // Pour chaque membre, on peut appeler subscribe_player (à implémenter ultérieurement)
             for member in team_members {
                 println!("[Network] Inscription du joueur : {}", member);
-                // client.subscribe_player(&member);
+                // client.subscribe_player(&member); // À implémenter ultérieurement.
             }
         }
-        // Boucle de maintien du thread réseau
         loop {
             thread::sleep(Duration::from_millis(100));
         }
     });
 
-    // Lancement de l'interface graphique sur le thread principal,
-    // en passant le transmetteur (tx) via un wrapper.
+    // Lancement de l'interface graphique sur le thread principal, en passant le transmetteur (tx)
     let app = TeamRegistrationAppWithChannel {
-        inner: team_gui::TeamRegistrationApp::default(),
+        inner: TeamRegistrationApp::default(),
         tx,
     };
     let native_options = eframe::NativeOptions::default();

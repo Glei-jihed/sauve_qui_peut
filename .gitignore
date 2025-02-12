@@ -1,0 +1,8 @@
+# Dossier de compilation Rust
+target/
+*.rs.bk
+Cargo.lock
+
+# Fichiers spécifiques à l'éditeur
+.idea/
+.vscode/
