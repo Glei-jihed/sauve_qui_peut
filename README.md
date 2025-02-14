@@ -40,3 +40,15 @@ Next steps:
 - Les réponses du serveur pour SubscribePlayer sont désormais affichées dans la console.
   
 Prochaine étape : traiter et afficher la réponse SubscribePlayer dans l'interface, et passer à l'intégration de la vue de jeu (RadarView, etc.).
+
+# feat(game-view): Ajout d'une interface graphique pour la vue radar du labyrinthe
+
+- Ajout du module `game_gui.rs` qui affiche une grille simulant le labyrinthe (RadarView).
+  - La grille est centrée horizontalement.
+  - Chaque cellule a une taille fixe avec un espacement, et les murs sont affichés en gris foncé.
+  - La position du joueur est indiquée en vert.
+- Mise à jour de `main.rs` pour lancer l'application GameView.
+  
+Next steps:
+- Intégrer la réception réelle des données RadarView depuis le serveur et mettre à jour dynamiquement la grille.
+- Ajouter des contrôles pour déplacer le joueur.

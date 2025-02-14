@@ -1,11 +1,12 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use serde_json;
-use shared::messages::{RegisterTeamResultWrapper, RegisterTeamResult, SubscribePlayer, SubscribePlayerResult};
+use shared::messages::{RegisterTeamResultWrapper, RegisterTeamResult, SubscribePlayer};
 
 pub struct GameClient {
     pub stream: TcpStream,
     pub registration_token: Option<String>,
+    pub server_address: String,
 }
 
 impl GameClient {
@@ -16,6 +17,7 @@ impl GameClient {
                 GameClient {
                     stream,
                     registration_token: None,
+                    server_address: server_address.to_string(),
                 }
             }
             Err(e) => {
@@ -55,8 +57,7 @@ impl GameClient {
             Ok(_) => {
                 let response = String::from_utf8_lossy(&buffer).to_string();
                 println!("📩 Réponse du serveur: {:?}", response);
-                let wrapper: Result<RegisterTeamResultWrapper, _> =
-                    serde_json::from_str(&response);
+                let wrapper: Result<RegisterTeamResultWrapper, _> = serde_json::from_str(&response);
                 match wrapper {
                     Ok(w) => match w.register_team_result {
                         RegisterTeamResult::OkVariant { ok } => {
@@ -78,40 +79,85 @@ impl GameClient {
         }
     }
 
-    pub fn subscribe_player(&mut self, player_name: &str) {
+    pub fn subscribe_player(&self, player_name: &str) {
         if let Some(token) = &self.registration_token {
-            let message = serde_json::json!({
-                "SubscribePlayer": {
-                    "name": player_name,
-                    "registration_token": token
+            match TcpStream::connect(&self.server_address) {
+                Ok(mut new_stream) => {
+                    let message = serde_json::json!({
+                        "SubscribePlayer": {
+                            "name": player_name,
+                            "registration_token": token
+                        }
+                    }).to_string();
+                    let message_size = (message.len() as u32).to_le_bytes();
+                    println!("📤 Envoi de la taille pour SubscribePlayer: {} octets", message.len());
+                    if new_stream.write_all(&message_size).is_err() {
+                        eprintln!("❌ Erreur d'envoi de la taille pour SubscribePlayer!");
+                        return;
+                    }
+                    if new_stream.write_all(message.as_bytes()).is_err() {
+                        eprintln!("❌ Erreur d'envoi du message SubscribePlayer!");
+                        return;
+                    }
+                    let mut size_buffer = [0; 4];
+                    if new_stream.read_exact(&mut size_buffer).is_err() {
+                        eprintln!("❌ Erreur de lecture de la taille de la réponse SubscribePlayer!");
+                        return;
+                    }
+                    let response_size = u32::from_le_bytes(size_buffer);
+                    let mut buffer = vec![0; response_size as usize];
+                    if new_stream.read_exact(&mut buffer).is_err() {
+                        eprintln!("❌ Erreur de lecture du message SubscribePlayer!");
+                        return;
+                    }
+                    let response = String::from_utf8_lossy(&buffer).to_string();
+                    println!("📩 Réponse du serveur (SubscribePlayer): {:?}", response);
+                },
+                Err(e) => {
+                    eprintln!("❌ Erreur lors de la connexion pour subscribe_player: {}", e);
                 }
-            }).to_string();
-            let message_size = (message.len() as u32).to_le_bytes();
-            println!("📤 Envoi de la taille pour SubscribePlayer: {} octets", message.len());
-            if self.stream.write_all(&message_size).is_err() {
-                eprintln!("❌ Erreur d'envoi de la taille pour SubscribePlayer!");
-                return;
             }
-            if self.stream.write_all(message.as_bytes()).is_err() {
-                eprintln!("❌ Erreur d'envoi du message SubscribePlayer!");
-                return;
-            }
-            let mut size_buffer = [0; 4];
-            if self.stream.read_exact(&mut size_buffer).is_err() {
-                eprintln!("❌ Erreur de lecture de la taille de la réponse SubscribePlayer!");
-                return;
-            }
-            let response_size = u32::from_le_bytes(size_buffer);
-            let mut buffer = vec![0; response_size as usize];
-            if self.stream.read_exact(&mut buffer).is_err() {
-                eprintln!("❌ Erreur de lecture du message SubscribePlayer!");
-                return;
-            }
-            let response = String::from_utf8_lossy(&buffer).to_string();
-            println!("📩 Réponse du serveur (SubscribePlayer): {:?}", response);
-            // Vous pouvez ajouter ici la désérialisation et le traitement de la réponse SubscribePlayerResult.
         } else {
             eprintln!("❌ Aucun token disponible pour subscribe_player!");
+        }
+    }
+
+    pub fn join_game(server_address: &str, token: &str, player_name: &str) {
+        match TcpStream::connect(server_address) {
+            Ok(mut stream) => {
+                let message = serde_json::json!({
+                    "SubscribePlayer": {
+                        "name": player_name,
+                        "registration_token": token
+                    }
+                }).to_string();
+                let message_size = (message.len() as u32).to_le_bytes();
+                println!("📤 Envoi de la taille pour SubscribePlayer (join): {} octets", message.len());
+                if stream.write_all(&message_size).is_err() {
+                    eprintln!("❌ Erreur d'envoi de la taille pour SubscribePlayer (join)!");
+                    return;
+                }
+                if stream.write_all(message.as_bytes()).is_err() {
+                    eprintln!("❌ Erreur d'envoi du message SubscribePlayer (join)!");
+                    return;
+                }
+                let mut size_buffer = [0; 4];
+                if stream.read_exact(&mut size_buffer).is_err() {
+                    eprintln!("❌ Erreur de lecture de la taille de la réponse SubscribePlayer (join)!");
+                    return;
+                }
+                let response_size = u32::from_le_bytes(size_buffer);
+                let mut buffer = vec![0; response_size as usize];
+                if stream.read_exact(&mut buffer).is_err() {
+                    eprintln!("❌ Erreur de lecture du message SubscribePlayer (join)!");
+                    return;
+                }
+                let response = String::from_utf8_lossy(&buffer).to_string();
+                println!("📩 Réponse du serveur (SubscribePlayer join): {:?}", response);
+            },
+            Err(e) => {
+                eprintln!("❌ Erreur lors de la connexion pour join_game: {}", e);
+            }
         }
     }
 }

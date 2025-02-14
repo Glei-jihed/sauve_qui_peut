@@ -18,8 +18,6 @@ pub enum RegisterTeamResult {
     ErrVariant { #[serde(rename = "Err")] err: String },
 }
 
-// Ce wrapper permet de désérialiser une réponse de la forme
-// {"RegisterTeamResult": { "Ok": { "expected_players": 3, "registration_token": "SECRET" } }}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RegisterTeamResultWrapper {
     #[serde(rename = "RegisterTeamResult")]
@@ -39,11 +37,9 @@ pub enum SubscribePlayerResult {
     Err(String),
 }
 
-/// Le RadarView contient la vue du joueur, encodée en base64.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RadarView(pub String);
 
-/// Enum pour les indices envoyés par le serveur.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Hint {
@@ -53,7 +49,6 @@ pub enum Hint {
     SOSHelper,
 }
 
-/// Les actions possibles du joueur.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Action {
@@ -61,7 +56,6 @@ pub enum Action {
     SolveChallenge { answer: String },
 }
 
-/// Direction relative pour le mouvement.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum RelativeDirection {
     Front,
@@ -70,7 +64,6 @@ pub enum RelativeDirection {
     Left,
 }
 
-/// Erreurs possibles lors d'une action.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum ActionError {
@@ -81,7 +74,6 @@ pub enum ActionError {
     InvalidChallengeSolution,
 }
 
-/// Les challenges envoyés par le serveur.
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum Challenge {
