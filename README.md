@@ -52,3 +52,5 @@ Prochaine étape : traiter et afficher la réponse SubscribePlayer dans l'interf
 Next steps:
 - Intégrer la réception réelle des données RadarView depuis le serveur et mettre à jour dynamiquement la grille.
 - Ajouter des contrôles pour déplacer le joueur.
+
+# feat(gui-styling): Amélioration interface création d’équipe
