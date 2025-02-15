@@ -1,7 +1,10 @@
+// client/src/game.rs
+
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use serde_json;
 use shared::messages::{RegisterTeamResultWrapper, RegisterTeamResult, SubscribePlayer};
+use shared::messages::RelativeDirection; // Importation pour les actions de déplacement
 
 pub struct GameClient {
     pub stream: TcpStream,
@@ -158,6 +161,28 @@ impl GameClient {
             Err(e) => {
                 eprintln!("❌ Erreur lors de la connexion pour join_game: {}", e);
             }
+        }
+    }
+
+    /// Envoie une action de déplacement (MoveTo) au serveur en utilisant une nouvelle connexion.
+    pub fn send_move_action_static(server_address: &str, direction: RelativeDirection) {
+        if let Ok(mut stream) = TcpStream::connect(server_address) {
+            let message = serde_json::json!({
+                "Action": {
+                    "MoveTo": format!("{:?}", direction)
+                }
+            })
+            .to_string();
+            let message_size = (message.len() as u32).to_le_bytes();
+            if stream.write_all(&message_size).is_err() {
+                eprintln!("❌ Erreur d'envoi de la taille pour MoveTo!");
+                return;
+            }
+            if stream.write_all(message.as_bytes()).is_err() {
+                eprintln!("❌ Erreur d'envoi du message MoveTo!");
+            }
+        } else {
+            eprintln!("❌ Erreur de connexion pour envoyer MoveTo!");
         }
     }
 }

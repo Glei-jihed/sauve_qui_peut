@@ -3,9 +3,13 @@ use eframe::{egui, App, Frame};
 use std::sync::mpsc::{Receiver, Sender};
 use crate::team_gui::{TeamRegistrationApp, RegistrationData};
 use crate::game_gui::GameView;
-use shared::messages::RelativeDirection; // Pour utiliser RelativeDirection
+use shared::messages::RelativeDirection;
 use std::time::Duration;
 use std::thread;
+use image::io::Reader as ImageReader;
+use image::DynamicImage;
+use egui::TextureOptions;
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub enum AppState {
@@ -56,10 +60,6 @@ impl MainApp {
 
 /// Charge la texture depuis "images/random_maze.png"
 fn load_maze_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
-    use image::io::Reader as ImageReader;
-    use image::DynamicImage;
-    use std::path::Path;
-
     let path = Path::new("images/random_maze.png");
     let reader = ImageReader::open(path).ok()?;
     let img: DynamicImage = reader.decode().ok()?;
@@ -67,7 +67,7 @@ fn load_maze_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
     let size = [rgba.width() as usize, rgba.height() as usize];
     let pixels = rgba.into_raw();
     let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
-    Some(ctx.load_texture("random_maze", color_image, egui::TextureOptions::default()))
+    Some(ctx.load_texture("random_maze", color_image, TextureOptions::default()))
 }
 
 impl App for MainApp {
@@ -101,14 +101,16 @@ impl App for MainApp {
                     });
                 });
             }
+
             AppState::GameSetup { team_name, team_members, token } => {
+                // Cloner pour utilisation dans les closures
                 let team_name_cl = team_name.clone();
                 let team_members_cl = team_members.clone();
                 let token_cl = token.clone();
 
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.columns(2, |cols| {
-                        // Colonne gauche : Infos d'équipe et bouton pour lancer la partie
+                        // Colonne gauche : Infos d'équipe et bouton de lancement
                         cols[0].vertical(|ui| {
                             ui.heading(egui::RichText::new("Détails de la Partie")
                                 .size(28.0)
@@ -118,7 +120,7 @@ impl App for MainApp {
                             ui.label(egui::RichText::new("Nom de l'équipe :")
                                 .size(20.0)
                                 .color(egui::Color32::LIGHT_GRAY));
-                            ui.label(egui::RichText::new(team_name_cl.as_str())
+                            ui.label(egui::RichText::new(&team_name_cl)
                                 .size(24.0)
                                 .color(egui::Color32::WHITE));
                             ui.separator();
@@ -136,13 +138,13 @@ impl App for MainApp {
                             ui.label(egui::RichText::new("Token :")
                                 .size(20.0)
                                 .color(egui::Color32::LIGHT_GRAY));
-                            ui.label(egui::RichText::new(token_cl.as_str())
+                            ui.label(egui::RichText::new(&token_cl)
                                 .size(22.0)
                                 .color(egui::Color32::WHITE));
                             ui.separator();
 
                             ui.add_space(20.0);
-                            // Bouton pour lancer la partie
+                            // Bouton de lancement
                             ui.horizontal(|ui| {
                                 ui.add_space(ui.available_width() * 0.1);
                                 let big_button = ui.add_sized(
@@ -159,7 +161,7 @@ impl App for MainApp {
                             });
                         });
 
-                        // Colonne droite : Cube texturé tournant avec image de fond
+                        // Colonne droite : Cube texturé tournant
                         cols[1].vertical(|ui| {
                             ui.separator();
                             let available_size = ui.available_size();
@@ -179,14 +181,14 @@ impl App for MainApp {
                                 );
                             }
 
-                            // Dessiner un carré tournant (simulateur de cube) par-dessus
+                            // Dessiner un carré tournant par-dessus
                             let angle = self.rotation_angle;
                             let half = square_side / 4.0;
                             let corners = [
                                 egui::Pos2::new(-half, -half),
-                                egui::Pos2::new( half, -half),
-                                egui::Pos2::new( half,  half),
-                                egui::Pos2::new(-half,  half),
+                                egui::Pos2::new(half, -half),
+                                egui::Pos2::new(half, half),
+                                egui::Pos2::new(-half, half),
                             ];
                             let rotated_corners: Vec<egui::Pos2> = corners.iter().map(|p| {
                                 let rx = p.x * angle.cos() - p.y * angle.sin();
@@ -194,37 +196,19 @@ impl App for MainApp {
                                 egui::Pos2::new(rect.center().x + rx, rect.center().y + ry)
                             }).collect();
 
-                            // Couleur du cube en noir/gris
-                            let cube_color = egui::Color32::from_rgb(
-                                (angle.cos() * 70.0 + 70.0) as u8,
-                                (angle.sin() * 70.0 + 70.0) as u8,
-                                (angle.sin() * 70.0 + 70.0) as u8,
-                            );
                             let mut mesh = egui::Mesh::with_texture(self.maze_texture.as_ref().unwrap().id());
                             let color = egui::Color32::WHITE;
-                            let v0 = egui::epaint::Vertex {
-                                pos: rotated_corners[0],
-                                uv: egui::pos2(0.0, 0.0),
-                                color,
-                            };
-                            let v1 = egui::epaint::Vertex {
-                                pos: rotated_corners[1],
-                                uv: egui::pos2(1.0, 0.0),
-                                color,
-                            };
-                            let v2 = egui::epaint::Vertex {
-                                pos: rotated_corners[2],
-                                uv: egui::pos2(1.0, 1.0),
-                                color,
-                            };
-                            let v3 = egui::epaint::Vertex {
-                                pos: rotated_corners[3],
-                                uv: egui::pos2(0.0, 1.0),
-                                color,
-                            };
                             let i0 = mesh.vertices.len() as u32;
-                            mesh.vertices.extend_from_slice(&[v0, v1, v2, v3]);
-                            mesh.indices.extend_from_slice(&[i0, i0 + 1, i0 + 2, i0, i0 + 2, i0 + 3]);
+                            mesh.vertices.extend_from_slice(&[
+                                egui::epaint::Vertex { pos: rotated_corners[0], uv: egui::pos2(0.0, 0.0), color },
+                                egui::epaint::Vertex { pos: rotated_corners[1], uv: egui::pos2(1.0, 0.0), color },
+                                egui::epaint::Vertex { pos: rotated_corners[2], uv: egui::pos2(1.0, 1.0), color },
+                                egui::epaint::Vertex { pos: rotated_corners[3], uv: egui::pos2(0.0, 1.0), color },
+                            ]);
+                            mesh.indices.extend_from_slice(&[
+                                i0, i0 + 1, i0 + 2,
+                                i0, i0 + 2, i0 + 3,
+                            ]);
                             ui.painter().add(egui::Shape::mesh(mesh));
                         });
                     });

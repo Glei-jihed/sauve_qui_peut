@@ -83,3 +83,5 @@ Next steps:
 - Added a large "Lancer la partie" button below the team info that transitions the app to the game view.
 - Improved mesh creation and rotation using a cumulative rotation angle for smoother animation.
 - Maintained persistent team info display in the Game state.
+
+
