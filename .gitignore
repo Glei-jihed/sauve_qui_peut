@@ -6,3 +6,5 @@ Cargo.lock
 # Fichiers spécifiques à l'éditeur
 .idea/
 .vscode/
+# Ignorer les fichiers compilés de Rust
+target/
