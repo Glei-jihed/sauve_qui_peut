@@ -4,8 +4,8 @@ use std::sync::mpsc::{Receiver, Sender};
 use crate::team_gui::{TeamRegistrationApp, RegistrationData};
 use crate::game_gui::GameView;
 use shared::messages::RelativeDirection;
-use std::time::Duration;
 use std::thread;
+use std::time::Duration;
 use image::io::Reader as ImageReader;
 use image::DynamicImage;
 use egui::TextureOptions;
@@ -103,14 +103,13 @@ impl App for MainApp {
             }
 
             AppState::GameSetup { team_name, team_members, token } => {
-                // Cloner pour utilisation dans les closures
                 let team_name_cl = team_name.clone();
                 let team_members_cl = team_members.clone();
                 let token_cl = token.clone();
 
                 egui::CentralPanel::default().show(ctx, |ui| {
                     ui.columns(2, |cols| {
-                        // Colonne gauche : Infos d'équipe et bouton de lancement
+                        // Colonne gauche : Informations et bouton pour lancer la partie
                         cols[0].vertical(|ui| {
                             ui.heading(egui::RichText::new("Détails de la Partie")
                                 .size(28.0)
@@ -144,7 +143,7 @@ impl App for MainApp {
                             ui.separator();
 
                             ui.add_space(20.0);
-                            // Bouton de lancement
+                            // Bouton pour lancer la partie
                             ui.horizontal(|ui| {
                                 ui.add_space(ui.available_width() * 0.1);
                                 let big_button = ui.add_sized(
@@ -216,6 +215,7 @@ impl App for MainApp {
             }
 
             AppState::Game { team_name, team_members, token } => {
+                // Panneau d'informations en haut
                 egui::TopBottomPanel::top("game_info").show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         ui.label(egui::RichText::new(format!("Équipe : {}", team_name))
@@ -235,6 +235,24 @@ impl App for MainApp {
                             .color(egui::Color32::WHITE));
                     });
                 });
+                // Panneau de contrôle pour les déplacements en bas
+                egui::TopBottomPanel::bottom("move_controls").show(ctx, |ui| {
+                    ui.horizontal_centered(|ui| {
+                        if ui.button("⬅️").clicked() {
+                            crate::game::GameClient::send_move_action_static("127.0.0.1:8778", RelativeDirection::Left);
+                        }
+                        if ui.button("⬆️").clicked() {
+                            crate::game::GameClient::send_move_action_static("127.0.0.1:8778", RelativeDirection::Front);
+                        }
+                        if ui.button("➡️").clicked() {
+                            crate::game::GameClient::send_move_action_static("127.0.0.1:8778", RelativeDirection::Right);
+                        }
+                        if ui.button("⬇️").clicked() {
+                            crate::game::GameClient::send_move_action_static("127.0.0.1:8778", RelativeDirection::Back);
+                        }
+                    });
+                });
+                // Vue Radar dans le panneau central
                 egui::CentralPanel::default().show(ctx, |ui| {
                     GameView::default().update(ctx, frame);
                 });
