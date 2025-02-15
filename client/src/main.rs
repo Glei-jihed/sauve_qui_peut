@@ -29,7 +29,11 @@ fn main() {
                     let mut client = GameClient::new(server_address);
                     client.register_team(&team_name);
                     if let Some(token) = client.registration_token.clone() {
-                        tx_net_gui.send(NetworkMessage::RegistrationComplete(token.clone())).unwrap();
+                        tx_net_gui.send(NetworkMessage::RegistrationComplete {
+                            token: token.clone(),
+                            team_name: team_name.clone(),
+                            team_members: team_members.clone(),
+                        }).unwrap();
                         for member in team_members.iter() {
                             println!("[Network] Inscription du joueur : {}", member);
                             client.subscribe_player(member);
@@ -42,7 +46,11 @@ fn main() {
                     println!("[Network] Infos reçues (Join): token={} player={}", token, player_name);
                     let server_address = "127.0.0.1:8778";
                     GameClient::join_game(server_address, &token, &player_name);
-                    tx_net_gui.send(NetworkMessage::RegistrationComplete(token.clone())).unwrap();
+                    tx_net_gui.send(NetworkMessage::RegistrationComplete {
+                        token: token.clone(),
+                        team_name: String::new(), // Optionnel : nom d'équipe vide pour le mode Join
+                        team_members: Vec::new(),
+                    }).unwrap();
                 }
             }
         }

@@ -54,3 +54,18 @@ Next steps:
 - Ajouter des contrôles pour déplacer le joueur.
 
 # feat(gui-styling): Amélioration interface création d’équipe
+
+
+# feat(ui): feat(game-info-display): Affichage des infos d'inscription dans le mode jeu
+- Modifié AppState dans app.rs pour inclure token, team_name et team_members dans la variante Game.
+- Ajout d’un TopBottomPanel dans MainApp pour afficher le nom de l’équipe, les membres et le token au-dessus de la vue de jeu.
+- Mise à jour du traitement des messages réseau pour transmettre ces informations.
+
+- Ajout d'un champ rotation_angle dans MainApp pour gérer l'animation fluide du «cube».
+- Incrémentation de rotation_angle à chaque frame pour un mouvement plus régulier.
+- Réorganisation de l'interface en deux colonnes (informations + bouton à gauche, cube texturé tournant à droite).
+- Utilisation de random_maze.png comme texture appliquée sur le carré rotatif.
+- Conservation du panneau supérieur d'infos dans l'état Game avec la vue RadarView en dessous.
+
+
+
