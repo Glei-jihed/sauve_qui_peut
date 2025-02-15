@@ -68,4 +68,18 @@ Next steps:
 - Conservation du panneau supérieur d'infos dans l'état Game avec la vue RadarView en dessous.
 
 
+# feat(radar-view): add dynamic RadarView simulation
 
+- Ajout d'un champ `last_update` dans GameView pour suivre le temps écoulé.
+- Mise à jour de la grille de RadarView toutes les 2 secondes en modifiant aléatoirement les cellules (simulation de mise à jour).
+- Intégration de la dépendance `rand` pour générer des valeurs aléatoires.
+- Affichage de la grille 7x7 avec la cellule centrale en vert.
+
+# feat(ui): enhance GameSetup screen with two-column layout and dynamic rotating cube
+
+- Implemented a two-column layout in the GameSetup screen:
+  - Left column: displays team details (team name, members, token) with classic black/gray/white styling and clear separators.
+  - Right column: shows a dynamic rotating cube textured with "random_maze.png", simulating a 3D effect.
+- Added a large "Lancer la partie" button below the team info that transitions the app to the game view.
+- Improved mesh creation and rotation using a cumulative rotation angle for smoother animation.
+- Maintained persistent team info display in the Game state.
