@@ -56,7 +56,7 @@ pub enum Action {
     SolveChallenge { answer: String },
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum RelativeDirection {
     Front,
     Right,

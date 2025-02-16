@@ -85,3 +85,13 @@ Next steps:
 - Maintained persistent team info display in the Game state.
 
 
+# feat(game): add movement action functionality
+
+- Added static method `send_move_action_static` in GameClient to send "MoveTo" actions to the server.
+- Tested by invoking the method with a sample direction (e.g., RelativeDirection::Front) and verifying that the server receives the correct JSON message.
+
+# feat(game-controls): add movement controls panel in Game state
+
+- Added a bottom panel in the Game state with directional buttons (⬅️, ⬆️, ➡️, ⬇️) that call
+  GameClient::send_move_action_static with the corresponding RelativeDirection.
+- Integrated the movement controls into the existing Game state layout, preserving team info in a top panel and RadarView in the central panel.

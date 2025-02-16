@@ -15,18 +15,16 @@ pub fn send_message(stream: &mut TcpStream, message: &str) {
 pub fn receive_message(stream: &mut TcpStream) -> Option<String> {
     let mut size_buffer = [0; 4];
     if stream.read_exact(&mut size_buffer).is_err() {
-        eprintln!("❌ Erreur lors de la lecture de la taille du message!");
-        return None;
+        return None; // On retourne None si on ne parvient pas à lire (EOF ou autre)
     }
     let size = u32::from_le_bytes(size_buffer) as usize;
     if size > 1_048_576 {
-        eprintln!("⚠️ Message reçu trop grand: {} octets!", size);
+        eprintln!("⚠️ Message trop grand: {} octets!", size);
         return None;
     }
     let mut buffer = vec![0; size];
     if stream.read_exact(&mut buffer).is_err() {
-        eprintln!("❌ Erreur lors de la lecture du message!");
         return None;
     }
-    String::from_utf8(buffer).ok()
+    Some(String::from_utf8_lossy(&buffer).to_string())
 }
